@@ -38,8 +38,8 @@ PROGRAM riemann
      !b_covolume = 0.1d0/max(rhol,rhor)
      b_covolume = 0.d0
      
-     el = gamma_law_internal(rhol,pl,gamma)
-     er = gamma_law_internal(rhor,pr,gamma)
+     el = gamma_law_internal(rhol,pl)
+     er = gamma_law_internal(rhor,pr)
 
      CALL CPU_TIME(t1)
      DO n = 1, 1 !1000000 
@@ -66,31 +66,31 @@ PROGRAM riemann
   CLOSE(21)
 CONTAINS
   !===
-  SUBROUTINE find_string(unit, string, okay)
+  SUBROUTINE find_string(unit_file, string, is_okay)
     IMPLICIT NONE
     INTEGER, PARAMETER                 :: long_max=128
-    INTEGER,                INTENT(IN) :: unit
+    INTEGER,                INTENT(IN) :: unit_file
     CHARACTER(LEN=*),       INTENT(IN) :: string
     CHARACTER(len=long_max)            :: control
-    LOGICAL                            :: okay
-    okay = .TRUE.
-    REWIND(unit)
+    LOGICAL                            :: is_okay
+    is_okay = .TRUE.
+    REWIND(unit_file)
     DO WHILE (.TRUE.)
-       READ(unit,'(64A)',ERR=11,END=22) control
+       READ(unit_file,'(64A)',ERR=11,END=22) control
        IF (trim(adjustl(control))==string) RETURN
     END DO
 11  WRITE(*,*) ' Error in find_string'
     STOP
-22  okay = .FALSE.
+22  is_okay = .FALSE.
     RETURN
   END SUBROUTINE find_string
 
   !===Compute the specific internal energy from the covolume EOS
-  function gamma_law_internal(rho,p,gamma) RESULT(e)
+  function gamma_law_internal(rho, p) RESULT(e)
     IMPLICIT NONE
-    REAL(KIND=NUMBER) :: rho, p, gamma
+    REAL(KIND=NUMBER) :: rho, p
     REAL(KIND=NUMBER) :: e
-    e = p*(1-b_covolume*rho)/((gamma-1)*rho)
+    e = p*(1.d0 - b_covolume*rho)/((gamma - 1.d0)*rho)
   END function gamma_law_internal
 
 

@@ -16,8 +16,8 @@ MODULE arbitrary_eos_lambda_module
    REAL(KIND=NUMBER) :: taur, ur, pr, er
    REAL(KIND=NUMBER) :: gammal, al, alphal, capAl, capBl, capCl, expol
    REAL(KIND=NUMBER) :: gammar, ar, alphar, capAr, capBr, capCr, expor
-   REAL(KIND=NUMBER) :: p_min, rho_min, gamma_min, alpha_min, capA_min, capB_min, phi_pmin
-   REAL(KIND=NUMBER) :: p_max, rho_max, gamma_max, alpha_max, capC_max, expo_max, phi_pmax
+   REAL(KIND=NUMBER) :: p_min, tau_min, gamma_min, alpha_min, capA_min, capB_min, phi_pmin
+   REAL(KIND=NUMBER) :: p_max, tau_max, gamma_max, alpha_max, capC_max, expo_max, phi_pmax
    REAL(KIND=NUMBER) :: gamma_lm, expo_lm
    REAL(KIND=NUMBER) :: gamma_uM, expo_uM
    REAL(KIND=NUMBER) :: numerator, vacuum
@@ -96,13 +96,13 @@ CONTAINS
 
       IF (no_iter) THEN
          pstar = p2
-         CALL no_iter_update_lambda(ul, pl, al, gammal, ur, pr, ar, gammar, p2, lambda_maxl_out, lambda_maxr_out)
+         CALL no_iter_update_lambda(taul, pl, al, gammal, taur, pr, ar, gammar, p2, lambda_maxl_out, lambda_maxr_out)
          RETURN
       ELSE
          !===Iterations
          p1 = MAX(p1, p2 - phi(p2)/phi_prime(p2))
          DO WHILE (.TRUE.)
-            CALL update_lambda(ul, pl, al, gammal, ur, pr, ar, gammar, p1, p2, in_tol, &
+            CALL update_lambda(taul, pl, al, gammal, taur, pr, ar, gammar, p1, p2, in_tol, &
                                lambda_maxl_out, lambda_maxr_out, check)
             pstar = p2
             IF (check) RETURN
@@ -111,8 +111,8 @@ CONTAINS
             phi2 = phi(p2)
             phi22 = phi_prime(p2)
             IF (phi1 > zero) THEN
-               lambda_maxl_out = lambdaz(ul, pl, al, gammal, p1, -1)
-               lambda_maxr_out = lambdaz(ur, pr, ar, gammar, p1, 1)
+               lambda_maxl_out = lambdaz(taul, pl, al, gammal, p1, -1)
+               lambda_maxr_out = lambdaz(taur, pr, ar, gammar, p1, 1)
                pstar = p1
                RETURN
             END IF
@@ -168,14 +168,14 @@ CONTAINS
       REAL(KIND=NUMBER), INTENT(OUT) :: p1, p2
       REAL(KIND=NUMBER) :: phat1, phat2, r, p_ratio
       REAL(KIND=NUMBER) :: xl, xr, a, b, c
-      
+
       IF (vacuum .LE. 0.d0) THEN
          p1 = 0.d0
          p2 = 0.d0
-         RETURN 
-      END IF 
-      
-      p_ratio = (p_min + p_infty)/(p_max + p_infty) 
+         RETURN
+      END IF
+
+      p_ratio = (p_min + p_infty)/(p_max + p_infty)
       IF (0.d0 .LE. phi_pmin) THEN
          p1 = 0.d0
          phat1 = p_min*(numerator/(alpha_min + alpha_max*(p_ratio)**expo_uM))**(1.d0/expo_uM)
@@ -209,48 +209,50 @@ CONTAINS
       END IF
    END SUBROUTINE initialize_p1_p2
 
-   SUBROUTINE no_iter_update_lambda(ul, pl, al, gammal, ur, pr, ar, gammar, p2, lambda_maxl, lambda_maxr)
+   SUBROUTINE no_iter_update_lambda(tau_L, p_L, a_L, gamma_L, tau_R, p_R, a_R, gamma_R, &
+                                    p2, lambda_max_L, lambda_max_R)
       IMPLICIT NONE
-      REAL(KIND=NUMBER), INTENT(IN)  :: ul, pl, al, gammal, ur, pr, ar, gammar, p2
-      REAL(KIND=NUMBER), INTENT(OUT) :: lambda_maxl, lambda_maxr
+      REAL(KIND=NUMBER), INTENT(IN)  :: tau_L, p_L, a_L, gamma_L, tau_R, p_R, a_R, gamma_R, p2
+      REAL(KIND=NUMBER), INTENT(OUT) :: lambda_max_L, lambda_max_R
       REAL(KIND=NUMBER) :: v11, v32, lambda_max
-      v11 = lambdaz(ul, pl, al, gammal, p2, -1)
-      v32 = lambdaz(ur, pr, ar, gammar, p2, 1)
-      lambda_maxl = MAX(-v11, zero)
-      lambda_maxr = MAX(v32, zero)
-      lambda_max = MAX(lambda_maxl, lambda_maxr)
+      v11 = lambdaz(tau_L, p_L, a_L, gamma_L, p2, -1)
+      v32 = lambdaz(tau_R, p_R, a_R, gamma_R, p2, 1)
+      lambda_max_L = MAX(-v11, zero)
+      lambda_max_R = MAX(v32, zero)
+      lambda_max = MAX(lambda_max_L, lambda_max_R)
    END SUBROUTINE no_iter_update_lambda
 
-   FUNCTION lambdaz(uz, pz, az, gammaz, pstar, z) RESULT(vv)
+   FUNCTION lambdaz(tauz, pz, az, gammaz, pstar, z) RESULT(vv)
       IMPLICIT NONE
-      REAL(KIND=NUMBER), INTENT(IN) :: uz, pz, az, gammaz, pstar
+      REAL(KIND=NUMBER), INTENT(IN) :: tauz, pz, az, gammaz, pstar
       INTEGER, INTENT(IN) :: z
       REAL(KIND=NUMBER)             :: vv
-      vv = uz + z*az*SQRT(1 + MAX((pstar - pz)/pz, zero)*(gammaz + 1)/(2*gammaz))
+      vv = z*az/tauz*SQRT(1.d0 + MAX((pstar - pz)/(pz + p_infty), zero)*(gammaz + 1.d0)/(2.d0*gammaz))
    END FUNCTION lambdaz
    !===end of code if no iteration
 
    !=== code below is needed for iterative solver
-   SUBROUTINE update_lambda(ul, pl, al, gammal, ur, pr, ar, gammar, p1, p2, tol, lambda_maxl, lambda_maxr, check)
+   SUBROUTINE update_lambda(tau_L, p_L, a_L, gamma_L, tau_R, p_R, a_R, gamma_R, &
+                            p1, p2, tol, lambda_max_L, lambda_max_R, check)
       IMPLICIT NONE
-      REAL(KIND=NUMBER), INTENT(IN)  :: ul, pl, al, gammal, ur, pr, ar, gammar
+      REAL(KIND=NUMBER), INTENT(IN)  :: tau_L, p_L, a_L, gamma_L, tau_R, p_R, a_R, gamma_R
       REAL(KIND=NUMBER), INTENT(IN)  :: p1, p2, tol
-      REAL(KIND=NUMBER), INTENT(OUT) :: lambda_maxl, lambda_maxr
+      REAL(KIND=NUMBER), INTENT(OUT) :: lambda_max_L, lambda_max_R
       LOGICAL, INTENT(OUT) :: check
       REAL(KIND=NUMBER) :: v11, v12, v31, v32, lambda_max, err1, err3
-      v11 = lambdaz(ul, pl, al, gammal, p2, -1)
-      v12 = lambdaz(ul, pl, al, gammal, p1, -1)
-      v31 = lambdaz(ur, pr, ar, gammar, p1, 1)
-      v32 = lambdaz(ur, pr, ar, gammar, p2, 1)
-      lambda_maxl = MAX(-v11, zero)
-      lambda_maxr = MAX(v32, zero)
-      lambda_max = MAX(lambda_maxl, lambda_maxr)
+      v11 = lambdaz(tau_L, p_L, a_L, gamma_L, p2, -1)
+      v12 = lambdaz(tau_L, p_L, a_L, gamma_L, p1, -1)
+      v31 = lambdaz(tau_R, p_R, a_R, gamma_R, p1, 1)
+      v32 = lambdaz(tau_R, p_R, a_R, gamma_R, p2, 1)
+      lambda_max_L = MAX(-v11, zero)
+      lambda_max_R = MAX(v32, zero)
+      lambda_max = MAX(lambda_max_L, lambda_max_R)
       err3 = ABS(v32 - v31)/lambda_max
       err1 = ABS(v12 - v11)/lambda_max
       IF (MAX(err1, err3) .LE. tol) THEN
          check = .TRUE.
       ELSE
-         check = .FALSE.
+         check = .FALSE. 
       END IF
    END SUBROUTINE update_lambda
 
@@ -271,21 +273,21 @@ CONTAINS
       END IF
    END FUNCTION f
 
-   FUNCTION phi_prime(p) RESULT(vv)
+   FUNCTION phi_prime(p) RESULT(val_phi)
       IMPLICIT NONE
       REAL(KIND=NUMBER), INTENT(IN) :: p
-      REAL(KIND=NUMBER)             :: vv
-      vv = fp(p, pl, capAl, capBl, capCl, expol) + fp(p, pr, capAr, capBr, capCr, expor)
+      REAL(KIND=NUMBER)             :: val_phi
+      val_phi = f_prime(p, pl, capAl, capBl, capCl, expol) + f_prime(p, pr, capAr, capBr, capCr, expor)
    CONTAINS
-      FUNCTION fp(p, pz, capAz, capBz, capCz, expoz) RESULT(ff)
-         REAL(KIND=NUMBER), INTENT(IN) :: p, pz, capAz, capBz, capCz, expoz
-         REAL(KIND=NUMBER)             :: ff
-         IF (p .LE. pz) THEN
-            ff = capCz*expoz*(p/pz)**(expoz - 1)/pz
+      FUNCTION f_prime(p_var, pz, capAz, capBz, capCz, expoz) RESULT(val_f)
+         REAL(KIND=NUMBER), INTENT(IN) :: p_var, pz, capAz, capBz, capCz, expoz
+         REAL(KIND=NUMBER)             :: val_f
+         IF (p_var .LE. pz) THEN
+            val_f = capCz*expoz*((p_var + p_infty)/(pz + p_infty))**(expoz - 1)/pz
          ELSE
-            ff = SQRT(capAz/(p + capBz))*(1 - (p - pz)/(2*(capBz + p)))
+            val_f = SQRT(capAz/(p_var + p_infty + capBz))*(1 - (p_var - pz)/(2.d0*(p_var + p_infty + capBz)))
          END IF
-      END FUNCTION fp
+      END FUNCTION f_prime
    END FUNCTION phi_prime
 
    !===Optional functions to compute rhostar and ustar (not necessary)
@@ -301,11 +303,11 @@ CONTAINS
       REAL(KIND=NUMBER), INTENT(IN) :: pstar, rhoz, pz, gammaz
       REAL(KIND=NUMBER)             :: vv
       IF (pstar .LE. pz) THEN
-         vv = rhoz/(b_covolume*rhoz + (1 - b_covolume*rhoz)*(pz/pstar)**(1/gammaz))
+         vv = rhoz/(b_covolume*rhoz + (1.d0 - b_covolume*rhoz)*(pz/pstar)**(1.d0/gammaz))
       ELSE
          vv = rhoz*(pstar/pz + (gammaz - 1)/(gammaz + 1))/ &
-              (((gammaz - 1 + 2*b_covolume*rhoz)*pstar)/((gammaz + 1)*pz) &
-               + (gammaz + 1 - 2*b_covolume*rhoz)/(gammaz + 1))
+              (((gammaz - 1.d0 + 2.d0*b_covolume*rhoz)*pstar)/((gammaz + 1.d0)*pz) &
+               + (gammaz + 1.d0 - 2.d0*b_covolume*rhoz)/(gammaz + 1.d0))
       END IF
    END FUNCTION rhostar
 
