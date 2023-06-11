@@ -25,12 +25,12 @@ MODULE arbitrary_eos_lambda_module
 
 CONTAINS
 
-   SUBROUTINE lambda_arbitrary_eos(in_taul, in_ul, in_el, in_pl, in_taur, in_ur, in_er, in_pr, in_tol, no_iter, &
-                                   lambda_maxl_out, lambda_maxr_out, pstar, k)
+   SUBROUTINE lambda_arbitrary_eos(in_taul, in_ul, in_el, in_pl, in_taur, in_ur, in_er, in_pr, in_tol, &
+                                   WANT_ITERATION, lambda_maxl_out, lambda_maxr_out, pstar, k)
       IMPLICIT NONE
       REAL(KIND=8), INTENT(IN) :: in_taul, in_el, in_taur, in_er, in_tol
       REAL(KIND=8), INTENT(IN), TARGET :: in_ul, in_pl, in_ur, in_pr
-      LOGICAL, INTENT(IN) :: no_iter
+      LOGICAL, INTENT(IN) :: WANT_ITERATION
       REAL(KIND=8), INTENT(OUT):: lambda_maxl_out, lambda_maxr_out, pstar
       INTEGER, INTENT(OUT):: k
       REAL(KIND=NUMBER)        :: p1, phi1, phi11, p2, phi2, phi22, phi12, phi112, phi221
@@ -94,7 +94,7 @@ CONTAINS
       !===Initialize p1 and p2 where p1 <= pstar <= p2
       CALL initialize_p1_p2(p1, p2)
 
-      IF (no_iter) THEN
+      IF (.NOT. WANT_ITERATION) THEN
          pstar = p2
          CALL no_iter_update_lambda(taul, pl, al, gammal, taur, pr, ar, gammar, p2, lambda_maxl_out, lambda_maxr_out)
          RETURN
@@ -252,7 +252,7 @@ CONTAINS
       IF (MAX(err1, err3) .LE. tol) THEN
          check = .TRUE.
       ELSE
-         check = .FALSE. 
+         check = .FALSE.
       END IF
    END SUBROUTINE update_lambda
 

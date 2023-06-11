@@ -10,8 +10,8 @@ PROGRAM riemann
   CHARACTER(LEN=3)  :: case_number
   CHARACTER(LEN=11) :: header
   LOGICAL           :: okay
-  
-   OPEN(UNIT = unit, FILE = '../../data', FORM = 'formatted', STATUS = 'unknown')
+
+   OPEN(UNIT = unit, FILE = 'data', FORM = 'formatted', STATUS = 'unknown')
    CALL find_string(unit, '===Number of cases', okay)
 
    !===Terminate if unable to find the string
@@ -22,7 +22,7 @@ PROGRAM riemann
 
    !===Read in the number of test cases
    READ(unit,*) num_cases
-  
+
   !===Main loop for computing the test problems
   DO it = 1, num_cases
      WRITE(case_number,'(I3)') it
@@ -37,18 +37,18 @@ PROGRAM riemann
      !===Testing the covolume EOS
      !b_covolume = 0.1d0/max(rhol,rhor)
      b_covolume = 0.d0
-     
+
      el = gamma_law_internal(rhol,pl)
      er = gamma_law_internal(rhor,pr)
 
      CALL CPU_TIME(t1)
-     DO n = 1, 1 !1000000 
+     DO n = 1, 1 !1000000
         CALL lambda_arbitrary_eos(rhol,ul,el,pl,rhor,ur,er,pr,tol,.false.,&
              lambda_maxl,lambda_maxr,pstar,k)
      END DO
      CALL CPU_TIME(t2)
-     write(*,*) header
-     WRITE(*,'(A,e23.17)') 'CPU ', t2-t1
+     WRITE(*,*) header
+     !WRITE(*,'(A,e23.17)') 'CPU ', t2-t1
      WRITE(*,'(2(A,e23.17,x),A,I1)') ' lambda_max=', &
           max(abs(lambda_maxl),abs(lambda_maxr)), 'pstar=', pstar, 'k=', k
 
@@ -58,9 +58,9 @@ PROGRAM riemann
              'rhostarR', rhostar(pstar,rhor,pr,gamma), 'rhor', rhor
         WRITE(*,*) 'uL', ul, 'ustar', ustar(pstar), 'ur', ur
         WRITE(*,*) 'pL', pl, 'pstar', pstar, 'pr', pr
-        WRITE(*,*) 'relative Residual', phi(pstar)/max(abs(phi(pl)),abs(phi(pr))) 
+        WRITE(*,*) 'relative Residual', phi(pstar)/max(abs(phi(pl)),abs(phi(pr)))
      ELSE
-        WRITE(*,*) 'relative Residual', phi(pstar)/max(abs(phi(pl)),abs(phi(pr))) 
+        WRITE(*,*) 'relative Residual', phi(pstar)/max(abs(phi(pl)),abs(phi(pr)))
      END IF
   END DO
   CLOSE(21)
