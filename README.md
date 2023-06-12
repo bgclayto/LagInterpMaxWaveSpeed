@@ -34,7 +34,7 @@ You can also execute `make debug` for more error checking flags. To execute the 
 
 ```
 cd run
-./a.exe
+./lambda
 ```
 
 ## Test Problems

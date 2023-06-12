@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 
 project(LagrangeTest)
 
-enable_testing()
-
 enable_language(Fortran)
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
