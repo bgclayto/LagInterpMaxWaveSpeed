@@ -43,7 +43,7 @@ PROGRAM riemann
    !===Main loop for computing the test problems
    DO it = 1, num_cases
       WRITE (case_number, '(I3)') it
-      header = '===Case '//trim(adjustl(case_number))
+      header = '===Case '//TRIM(ADJUSTL(case_number))
       CALL find_string(unit, header, OKAY)
       IF (.NOT. OKAY) THEN
          WRITE (*, *) '===The end.'
@@ -51,10 +51,7 @@ PROGRAM riemann
       END IF
       READ (21, *) rhol, rhor, ul, ur, pl, pr
       READ (21, *) tol
-      !===Testing the covolume EOS
-      !b_covolume = 0.1d0/max(rhol,rhor)
-      b_covolume = 0.d0
-
+      
       el = gamma_law_internal(rhol, pl)
       er = gamma_law_internal(rhor, pr)
 
@@ -67,7 +64,7 @@ PROGRAM riemann
       WRITE (*, *) header
       !WRITE(*,'(A,e23.17)') 'CPU ', t2-t1
       WRITE (*, '(2(A,e23.17,x),A,I1)') ' lambda_max=', &
-         max(abs(lambda_maxl), abs(lambda_maxr)), 'pstar=', pstar, 'k=', k
+         MAX(ABS(lambda_maxl), ABS(lambda_maxr)), 'pstar=', pstar, 'k=', k
 
       IF (num_cases == 1) THEN
          WRITE (*, *) 'gamma', gamma

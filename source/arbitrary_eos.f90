@@ -8,9 +8,6 @@ MODULE arbitrary_eos_lambda_module
    REAL(KIND=8), PUBLIC :: q = 0.d0            !===Reference specific internal energy
    PRIVATE
    INTEGER, PARAMETER:: NUMBER = KIND(1.d0)
-   REAL(KIND=NUMBER), PARAMETER :: zero = 0
-   REAL(KIND=NUMBER), PARAMETER :: one = 1
-   REAL(KIND=NUMBER), PARAMETER :: half = 0.5d0
    REAL(KIND=NUMBER), PARAMETER :: five_third = 5.d0/3.d0
    REAL(KIND=NUMBER) :: taul, ul, pl, el
    REAL(KIND=NUMBER) :: taur, ur, pr, er
@@ -47,7 +44,7 @@ CONTAINS
       k = 0
       CALL init(taul, el, pl, gammal, al, alphal, capAl, capBl, capCl, expol)
       CALL init(taur, er, pr, gammar, ar, alphar, capAr, capBr, capCr, expor)
-      IF (pl .LE. pr) THEN
+      IF (pl <= pr) THEN
          p_min = pl
          tau_min = taul
          gamma_min = gammal
@@ -74,7 +71,7 @@ CONTAINS
          alpha_max = alphal
          capC_max = capCl
       END IF
-      IF (gammal .LE. gammar) THEN
+      IF (gammal <= gammar) THEN
          gamma_lm = gammal
          gamma_lm_index = 'l'
          gamma_uM = gammar
@@ -94,7 +91,7 @@ CONTAINS
       !===Initialize p1 and p2 where p1 <= pstar <= p2
       CALL initialize_p1_p2(p1, p2)
 
-      IF (.NOT. WANT_ITERATION) THEN
+      IF (.NOT. WANT_ITERATION) THEN        
          pstar = p2
          CALL no_iter_update_lambda(taul, pl, al, gammal, taur, pr, ar, gammar, p2, lambda_maxl_out, lambda_maxr_out)
          RETURN
@@ -110,13 +107,13 @@ CONTAINS
             phi11 = phi_prime(p1)
             phi2 = phi(p2)
             phi22 = phi_prime(p2)
-            IF (phi1 > zero) THEN
+            IF (phi1 > 0.d0) THEN
                lambda_maxl_out = lambdaz(taul, pl, al, gammal, p1, -1)
                lambda_maxr_out = lambdaz(taur, pr, ar, gammar, p1, 1)
                pstar = p1
                RETURN
             END IF
-            IF (phi2 < zero) RETURN
+            IF (phi2 < 0.d0) RETURN
             phi12 = (phi2 - phi1)/(p2 - p1)
             phi112 = (phi12 - phi11)/(p2 - p1)
             phi221 = (phi22 - phi12)/(p2 - p1)
@@ -142,7 +139,7 @@ CONTAINS
       alpha = cc(gamma)*capC
       capA = 2.d0*x/(gamma + 1.d0)
       capB = (gamma - 1.d0)/(gamma + 1.d0)*(p + p_infty)
-      expo = half*(gamma - 1.d0)/gamma
+      expo = 0.5d0*(gamma - 1.d0)/gamma
    CONTAINS
       FUNCTION cc(g) RESULT(c_of_gamma)
          IMPLICIT NONE
@@ -153,12 +150,12 @@ CONTAINS
             WRITE (*, *) "gamma = ", g
             STOP
          ELSE IF (g .LE. five_third) THEN
-            c_of_gamma = one
+            c_of_gamma = 1.d0
          ELSE IF (g .LE. 3.d0) THEN
             c_of_gamma = SQRT((3.d0*g + 11.d0)/(6.d0*(g + 1.d0)))
          ELSE
             expo_of_three = (4.d0 - 2.d0*g)/(g - 1.d0)
-            c_of_gamma = SQRT(half + 2.d0*3.d0**expo_of_three/(g - 1.d0))
+            c_of_gamma = SQRT(0.5d0 + 2.d0*3.d0**expo_of_three/(g - 1.d0))
          END IF
       END FUNCTION cc
    END SUBROUTINE init
@@ -169,21 +166,22 @@ CONTAINS
       REAL(KIND=NUMBER) :: phat1, phat2, r, p_ratio
       REAL(KIND=NUMBER) :: xl, xr, a, b, c
 
-      IF (vacuum .LE. 0.d0) THEN
+      IF (vacuum <= 0.d0) THEN
+         WRITE(*,*) "Vacuum"
          p1 = 0.d0
          p2 = 0.d0
          RETURN
       END IF
-
       p_ratio = (p_min + p_infty)/(p_max + p_infty)
-      IF (0.d0 .LE. phi_pmin) THEN
+      IF (0.d0 <= phi_pmin) THEN
          p1 = 0.d0
          phat1 = p_min*(numerator/(alpha_min + alpha_max*(p_ratio)**expo_uM))**(1.d0/expo_uM)
          p2 = MIN(p_min, phat1)
-      ELSE IF (0.d0 .LE. phi_pmax) THEN
+         WRITE(*,*) "Double Expansion"
+      ELSE IF (0.d0 <= phi_pmax) THEN
          p1 = p_min + p_infty
          r = (p_ratio)**((gamma_uM - gamma_lm)/(2.d0*gamma_lm*gamma_uM))
-         IF (gamma_min_index .EQ. gamma_lm_index) THEN
+         IF (gamma_min_index == gamma_lm_index) THEN
             phat1 = (p_min + p_infty)*(numerator/(r*alpha_min &
                                                   + alpha_max*(p_ratio)**expo_uM))**(1.d0/expo_uM) - p_infty
             phat2 = (p_min + p_infty)*(numerator/(alpha_min &
@@ -195,6 +193,7 @@ CONTAINS
                                                   + alpha_max*(p_ratio)**expo_uM))**(1.d0/expo_uM) - p_infty
          END IF
          p2 = MIN(p_max, phat1, phat2)
+         WRITE(*,*) "Shock Expansion"
       ELSE
          p1 = p_max
          p2 = p_min*(numerator/(alpha_min &
@@ -206,6 +205,7 @@ CONTAINS
          c = -pl*xl - pr*xr
          phat2 = ((-b + SQRT(b*b - 4.d0*a*c))/(2.d0*a))**2
          p2 = MIN(p2, phat2)
+         WRITE(*,*) "Double Shock"
       END IF
    END SUBROUTINE initialize_p1_p2
 
@@ -217,8 +217,8 @@ CONTAINS
       REAL(KIND=NUMBER) :: v11, v32, lambda_max
       v11 = lambdaz(tau_L, p_L, a_L, gamma_L, p2, -1)
       v32 = lambdaz(tau_R, p_R, a_R, gamma_R, p2, 1)
-      lambda_max_L = MAX(-v11, zero)
-      lambda_max_R = MAX(v32, zero)
+      lambda_max_L = MAX(-v11, 0.d0)
+      lambda_max_R = MAX(v32, 0.d0)
       lambda_max = MAX(lambda_max_L, lambda_max_R)
    END SUBROUTINE no_iter_update_lambda
 
@@ -227,7 +227,7 @@ CONTAINS
       REAL(KIND=NUMBER), INTENT(IN) :: tauz, pz, az, gammaz, pstar
       INTEGER, INTENT(IN) :: z
       REAL(KIND=NUMBER)             :: vv
-      vv = z*az/tauz*SQRT(1.d0 + MAX((pstar - pz)/(pz + p_infty), zero)*(gammaz + 1.d0)/(2.d0*gammaz))
+      vv = z*az/tauz*SQRT(1.d0 + MAX((pstar - pz)/(pz + p_infty), 0.d0)*(gammaz + 1.d0)/(2.d0*gammaz))
    END FUNCTION lambdaz
    !===end of code if no iteration
 
@@ -244,12 +244,12 @@ CONTAINS
       v12 = lambdaz(tau_L, p_L, a_L, gamma_L, p1, -1)
       v31 = lambdaz(tau_R, p_R, a_R, gamma_R, p1, 1)
       v32 = lambdaz(tau_R, p_R, a_R, gamma_R, p2, 1)
-      lambda_max_L = MAX(-v11, zero)
-      lambda_max_R = MAX(v32, zero)
+      lambda_max_L = MAX(-v11, 0.d0)
+      lambda_max_R = MAX(v32, 0.d0)
       lambda_max = MAX(lambda_max_L, lambda_max_R)
       err3 = ABS(v32 - v31)/lambda_max
       err1 = ABS(v12 - v11)/lambda_max
-      IF (MAX(err1, err3) .LE. tol) THEN
+      IF (MAX(err1, err3) <= tol) THEN
          check = .TRUE.
       ELSE
          check = .FALSE.
@@ -266,7 +266,7 @@ CONTAINS
    FUNCTION f(p, pz, capAz, capBz, capCz, expoz) RESULT(ff)
       REAL(KIND=NUMBER), INTENT(IN) :: p, pz, capAz, capBz, capCz, expoz
       REAL(KIND=NUMBER)             :: ff
-      IF (p .LE. pz) THEN
+      IF (p <= pz) THEN
          ff = capCz*((p/pz)**expoz - 1)
       ELSE
          ff = (p - pz)*SQRT(capAz/(p + capBz))
@@ -282,7 +282,7 @@ CONTAINS
       FUNCTION f_prime(p_var, pz, capAz, capBz, capCz, expoz) RESULT(val_f)
          REAL(KIND=NUMBER), INTENT(IN) :: p_var, pz, capAz, capBz, capCz, expoz
          REAL(KIND=NUMBER)             :: val_f
-         IF (p_var .LE. pz) THEN
+         IF (p_var <= pz) THEN
             val_f = capCz*expoz*((p_var + p_infty)/(pz + p_infty))**(expoz - 1)/pz
          ELSE
             val_f = SQRT(capAz/(p_var + p_infty + capBz))*(1 - (p_var - pz)/(2.d0*(p_var + p_infty + capBz)))
@@ -295,15 +295,17 @@ CONTAINS
       IMPLICIT NONE
       REAL(KIND=NUMBER), INTENT(IN) :: pstar
       REAL(KIND=NUMBER)             :: vv
-      vv = half*(ul + f(pstar, pl, capAl, capBl, capCl, expol) + ur + f(pstar, pr, capAr, capBr, capCr, expor))
+      vv = 0.5d0*(ul + f(pstar, pl, capAl, capBl, capCl, expol) + ur + f(pstar, pr, capAr, capBr, capCr, expor))
    END FUNCTION ustar
 
    FUNCTION rhostar(pstar, rhoz, pz, gammaz) RESULT(vv)
       IMPLICIT NONE
       REAL(KIND=NUMBER), INTENT(IN) :: pstar, rhoz, pz, gammaz
-      REAL(KIND=NUMBER)             :: vv
-      IF (pstar .LE. pz) THEN
-         vv = rhoz/(b_covolume*rhoz + (1.d0 - b_covolume*rhoz)*(pz/pstar)**(1.d0/gammaz))
+      REAL(KIND=NUMBER)             :: vv, denom, tauz
+      tauz = 1.d0/rhoz
+      IF (pstar <= pz) THEN
+         denom = tauz + (tauz - b_covolume)*(((pstar+p_infty)/(pz+p_infty))**(1.d0/gammaz) - 1.d0)
+         vv = 1.d0/denom
       ELSE
          vv = rhoz*(pstar/pz + (gammaz - 1)/(gammaz + 1))/ &
               (((gammaz - 1.d0 + 2.d0*b_covolume*rhoz)*pstar)/((gammaz + 1.d0)*pz) &
