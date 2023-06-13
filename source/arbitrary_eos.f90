@@ -167,7 +167,6 @@ CONTAINS
       REAL(KIND=NUMBER) :: xl, xr, a, b, c
 
       IF (vacuum <= 0.d0) THEN
-         WRITE(*,*) "Vacuum"
          p1 = 0.d0
          p2 = 0.d0
          RETURN
@@ -177,7 +176,6 @@ CONTAINS
          p1 = 0.d0
          phat1 = p_min*(numerator/(alpha_min + alpha_max*(p_ratio)**expo_uM))**(1.d0/expo_uM)
          p2 = MIN(p_min, phat1)
-         WRITE(*,*) "Double Expansion"
       ELSE IF (0.d0 <= phi_pmax) THEN
          p1 = p_min + p_infty
          r = (p_ratio)**((gamma_uM - gamma_lm)/(2.d0*gamma_lm*gamma_uM))
@@ -193,7 +191,6 @@ CONTAINS
                                                   + alpha_max*(p_ratio)**expo_uM))**(1.d0/expo_uM) - p_infty
          END IF
          p2 = MIN(p_max, phat1, phat2)
-         WRITE(*,*) "Shock Expansion"
       ELSE
          p1 = p_max
          p2 = p_min*(numerator/(alpha_min &
@@ -205,7 +202,6 @@ CONTAINS
          c = -pl*xl - pr*xr
          phat2 = ((-b + SQRT(b*b - 4.d0*a*c))/(2.d0*a))**2
          p2 = MIN(p2, phat2)
-         WRITE(*,*) "Double Shock"
       END IF
    END SUBROUTINE initialize_p1_p2
 
