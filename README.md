@@ -13,9 +13,11 @@ Tabulated Equation of State*. SIAM Journal on Scientific Computing. 44(1), A444-
 
 and is concerned with Lagrangian frame rather than the Eulerian frame. In particular, the program computes
    
-$$\widehat{\lambda}_{\max} := \max_{Z \in \{L, R\}} \{ \frac{a_Z}{\tau_Z} \sqrt{1 + \frac{\gamma_Z + 1}{2\gamma_Z} \Big( \frac{\widehat{p}^{\*} - p_Z}{p_Z + p_\infty}, 0 \Big)} \}$$
+```math
+\widehat{\lambda}_{\max} := \max_{Z \in \{L, R\}} \{ \frac{a_Z}{\tau_Z} \sqrt{1 + \frac{\gamma_Z + 1}{2\gamma_Z} \Big( \frac{\widehat{p}^{\*} - p_Z}{p_Z + p_\infty}, 0 \Big)} \}
+```
 
-where $\widehat{p}^*$ is either an upper bound on $p^*$ or is identically $p*$ up to some tolerance ($10^{-9}$ for example).  
+where $\widehat{p}^\*$ is either an upper bound on $p\*$ or is identically $p\*$ up to some tolerance ($10^{-9}$ for example).  
 
 ## Compile 
 
