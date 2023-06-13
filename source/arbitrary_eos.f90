@@ -301,11 +301,10 @@ CONTAINS
    FUNCTION rhostar(pstar, rhoz, pz, gammaz) RESULT(vv)
       IMPLICIT NONE
       REAL(KIND=NUMBER), INTENT(IN) :: pstar, rhoz, pz, gammaz
-      REAL(KIND=NUMBER)             :: vv, denom, tauz
-      tauz = 1.d0/rhoz
+      REAL(KIND=NUMBER)             :: vv, denom
       IF (pstar <= pz) THEN
-         denom = tauz + (tauz - b_covolume)*(((pstar+p_infty)/(pz+p_infty))**(1.d0/gammaz) - 1.d0)
-         vv = 1.d0/denom
+         denom = b_covolume*rhoz + (1.d0 - b_covolume*rhoz)*((pstar+p_infty)/(pz+p_infty))**(1.d0/gammaz)
+         vv = rhoz/denom
       ELSE
          vv = rhoz*(pstar/pz + (gammaz - 1)/(gammaz + 1))/ &
               (((gammaz - 1.d0 + 2.d0*b_covolume*rhoz)*pstar)/((gammaz + 1.d0)*pz) &

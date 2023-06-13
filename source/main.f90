@@ -1,16 +1,17 @@
 PROGRAM riemann
    USE arbitrary_eos_lambda_module
    IMPLICIT NONE
-   INTEGER, PARAMETER :: NUMBER = KIND(1.d0)
-   REAL(KIND=NUMBER)  :: gamma = 1.4d0
-   REAL(KIND=NUMBER)  :: rhol, el, rhor, er
-   REAL(KIND=NUMBER)  :: ul, pl, ur, pr
-   REAL(KIND=NUMBER)  :: lambda_maxl, lambda_maxr, pstar, tol, t1, t2
-   INTEGER            :: k, n, num_cases, it, unit = 21
-   CHARACTER(LEN=3)   :: case_number
-   CHARACTER(LEN=11)  :: header, cmd_line_arg
-   LOGICAL            :: OKAY
-   LOGICAL            :: WANT_ITER = .TRUE.
+   INTEGER, PARAMETER           :: NUMBER = KIND(1.d0)
+   REAL(KIND=NUMBER), PARAMETER :: gamma_ideal=1.4d0
+   REAL(KIND=NUMBER), PARAMETER :: gamma_vdw=1.02d0, a_vdw=1.d0, b_vdw=1.d0
+   REAL(KIND=NUMBER)            :: rhol, el, rhor, er
+   REAL(KIND=NUMBER)            :: ul, pl, ur, pr
+   REAL(KIND=NUMBER)            :: lambda_maxl, lambda_maxr, pstar, tol, t1, t2
+   INTEGER                      :: k, n, num_cases, it, unit = 21
+   CHARACTER(LEN=3)             :: case_number
+   CHARACTER(LEN=11)            :: header, cmd_line_arg
+   LOGICAL                      :: OKAY
+   LOGICAL                      :: WANT_ITER = .TRUE.
 
    !===Handle command line argument
    IF (COMMAND_ARGUMENT_COUNT() .GT. 0) THEN
@@ -52,8 +53,14 @@ PROGRAM riemann
       READ (21, *) rhol, rhor, ul, ur, pl, pr
       READ (21, *) tol
       
-      el = gamma_law_internal(rhol, pl)
-      er = gamma_law_internal(rhor, pr)
+      !===The cases 15 an onwards use the van der Waals EOS
+      IF (it < 15) THEN 
+          el = gamma_law_internal(rhol, pl)
+          er = gamma_law_internal(rhor, pr)
+      ELSE
+          el = van_der_waals_internal(rhol, pl)
+          er = van_der_waals_internal(rhor, pr)
+      END IF 
 
       CALL CPU_TIME(t1)
       DO n = 1, 1 !1000000
@@ -67,14 +74,15 @@ PROGRAM riemann
          MAX(ABS(lambda_maxl), ABS(lambda_maxr)), 'pstar=', pstar, 'k=', k
 
       IF (num_cases == 1) THEN
-         WRITE (*, *) 'gamma', gamma
-         WRITE (*, *) 'rhoL', rhol, 'rhostarL', rhostar(pstar, rhol, pl, gamma), &
-            'rhostarR', rhostar(pstar, rhor, pr, gamma), 'rhor', rhor
+         WRITE (*, *) 'Warning. These results only hold for data generated from the ideal gas law.'
+         WRITE (*, *) 'gamma', gamma_ideal
+         WRITE (*, *) 'rhoL', rhol, 'rhostarL', rhostar(pstar, rhol, pl, gamma_ideal), &
+            'rhostarR', rhostar(pstar, rhor, pr, gamma_ideal), 'rhor', rhor
          WRITE (*, *) 'uL', ul, 'ustar', ustar(pstar), 'ur', ur
          WRITE (*, *) 'pL', pl, 'pstar', pstar, 'pr', pr
-         WRITE (*, *) 'relative Residual', phi(pstar)/max(abs(phi(pl)), abs(phi(pr)))
+         WRITE (*, *) 'relative Residual', phi(pstar)/MAX(ABS(phi(pl)), ABS(phi(pr)))
       ELSE
-         WRITE (*, *) 'relative Residual', phi(pstar)/max(abs(phi(pl)), abs(phi(pr)))
+         WRITE (*, *) 'relative Residual', phi(pstar)/MAX(ABS(phi(pl)), ABS(phi(pr)))
       END IF
    END DO
    CLOSE (21)
@@ -91,7 +99,7 @@ CONTAINS
       REWIND (unit_file)
       DO WHILE (.TRUE.)
          READ (unit_file, '(64A)', ERR=11, END=22) control
-         IF (trim(adjustl(control)) == string) RETURN
+         IF (TRIM(ADJUSTL(control)) == string) RETURN
       END DO
 11    WRITE (*, *) ' Error in find_string'
       STOP
@@ -104,7 +112,15 @@ CONTAINS
       IMPLICIT NONE
       REAL(KIND=NUMBER) :: rho, p
       REAL(KIND=NUMBER) :: e
-      e = p*(1.d0 - b_covolume*rho)/((gamma - 1.d0)*rho)
+      e = p*(1.d0 - b_covolume*rho)/((gamma_ideal - 1.d0)*rho)
    END function gamma_law_internal
+   
+   !===Compute the specific internal energy from the van der Waals EOS
+   function van_der_waals_internal(rho, p) RESULT(e)
+      IMPLICIT NONE
+      REAL(KIND=NUMBER) :: rho, p
+      REAL(KIND=NUMBER) :: e
+      e = (p + a_vdw*rho*rho)*(1.d0 - b_vdw*rho)/((gamma_vdw - 1.d0)*rho) - a_vdw*rho
+   END function van_der_waals_internal
 
 END PROGRAM riemann
