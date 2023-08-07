@@ -52,15 +52,18 @@ PROGRAM riemann
       END IF
       READ (21, *) rhol, rhor, ul, ur, pl, pr
       READ (21, *) tol
-      
-      !===The cases 15 an onwards use the van der Waals EOS
-      IF (it < 15) THEN 
-          el = gamma_law_internal(rhol, pl)
-          er = gamma_law_internal(rhor, pr)
-      ELSE
-          el = van_der_waals_internal(rhol, pl)
-          er = van_der_waals_internal(rhor, pr)
-      END IF 
+
+        !===The cases 15 an onwards use the van der Waals EOS
+        el = van_der_waals_internal(rhol, pl)
+        er = van_der_waals_internal(rhor, pr)
+
+!      IF (it < 15) THEN 
+!          el = gamma_law_internal(rhol, pl)
+!          er = gamma_law_internal(rhor, pr)
+!      ELSE
+!          el = van_der_waals_internal(rhol, pl)
+!          er = van_der_waals_internal(rhor, pr)
+!      END IF 
 
       CALL CPU_TIME(t1)
       DO n = 1, 1 !1000000
@@ -112,7 +115,7 @@ CONTAINS
       IMPLICIT NONE
       REAL(KIND=NUMBER) :: rho, p
       REAL(KIND=NUMBER) :: e
-      e = p*(1.d0 - b_covolume*rho)/((gamma_ideal - 1.d0)*rho)
+      e = p*(1.d0 - b_vdw*rho)/((gamma_ideal - 1.d0)*rho)
    END function gamma_law_internal
    
    !===Compute the specific internal energy from the van der Waals EOS
