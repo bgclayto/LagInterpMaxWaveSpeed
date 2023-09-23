@@ -3,7 +3,7 @@ MODULE arbitrary_eos_lambda_module
    IMPLICIT NONE
    PUBLIC               :: lambda_arbitrary_eos !===Main function
    PUBLIC               :: rhostar, ustar, phi  !===Optional functions. Can be removed
-   REAL(KIND=8), PARAMETER, PUBLIC :: b_covolume = 1.d0   !===Covolume constant, if known
+   REAL(KIND=8), PUBLIC :: b_covolume = 0.d0   !===Covolume constant, if known
    REAL(KIND=8), PARAMETER, PUBLIC :: p_infty = 0.d0      !===Reference pressure
    REAL(KIND=8), PARAMETER, PUBLIC :: q = 0.d0            !===Reference specific internal energy
    PRIVATE

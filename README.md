@@ -54,9 +54,9 @@ EOS.
 
 ## Modifications and Details
 
-Note that interpolation parameters `b_covolume`, `q`, and `p_infty`
-are assigned to be `0.d0` in `arbitrary_eos.f90`. So, if we would like
-to interpolate when the oracle is given by, for example, the van der
-Waals EOS, then we should assign `b_covolume` to be the same value
-provided by van der Waals EOS, `b_vdw`. However, for simplicity, all
-computations were run with all interpolation parameters set to zero.
+Note that `b_covolume` `q`, and `p_infty` are the interpolation
+parameters and are dependent on the oracle (equation of state which
+provides the pressure). If we need to interpolate when the oracle is
+given by, for example, by the van der Waals EOS, then we should assign
+`b_covolume` to be the same value provided by van der Waals EOS. That
+is we set `b_covolume` to be `b_vdw`.
